@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/61fabcd5ec2b4a029bb20d3c15e4e3c1/artifacts
+end_time: 1743044632692
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 61fabcd5ec2b4a029bb20d3c15e4e3c1
+run_name: sedate-dog-208
+run_uuid: 61fabcd5ec2b4a029bb20d3c15e4e3c1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743044632195
+status: 3
+tags: []
+user_id: fahrizal

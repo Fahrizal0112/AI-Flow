@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/0d52dd2081a7426280f5ef1366e94bec/artifacts
+end_time: 1743044996006
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 0d52dd2081a7426280f5ef1366e94bec
+run_name: resilient-mare-659
+run_uuid: 0d52dd2081a7426280f5ef1366e94bec
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743044995615
+status: 3
+tags: []
+user_id: fahrizal

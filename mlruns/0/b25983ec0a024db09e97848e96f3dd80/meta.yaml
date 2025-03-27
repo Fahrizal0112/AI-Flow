@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/b25983ec0a024db09e97848e96f3dd80/artifacts
+end_time: 1743044743010
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: b25983ec0a024db09e97848e96f3dd80
+run_name: smiling-dove-8
+run_uuid: b25983ec0a024db09e97848e96f3dd80
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743044742592
+status: 3
+tags: []
+user_id: fahrizal
