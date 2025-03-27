@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/04451d69dcf34717993d5e92fb382cfa/artifacts
+end_time: 1743042103467
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 04451d69dcf34717993d5e92fb382cfa
+run_name: bemused-fish-918
+run_uuid: 04451d69dcf34717993d5e92fb382cfa
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743042103249
+status: 3
+tags: []
+user_id: fahrizal

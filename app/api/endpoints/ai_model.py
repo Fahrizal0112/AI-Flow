@@ -15,10 +15,12 @@ from pydantic import BaseModel
 import numpy as np
 import os
 import joblib
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import zipfile
 import tempfile
 import shutil
+from contextlib import contextmanager
+import io
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -194,6 +196,16 @@ def _get_mlflow_metrics(run_id: str) -> dict:
     mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
     run = mlflow.get_run(run_id)
     return run.data.metrics
+
+def _get_status_detail(status: str) -> str:
+    """Get detail description for model status"""
+    status_details = {
+        "pending": "Model sedang menunggu untuk diproses",
+        "training": "Model sedang dalam proses training",
+        "completed": "Training selesai dan model siap digunakan",
+        "failed": "Training gagal, silakan cek log untuk detail"
+    }
+    return status_details.get(status, "Status tidak diketahui")
 
 @router.get("/{model_id}/logs")
 async def get_model_logs(
@@ -485,12 +497,58 @@ class TextPreprocessor:
         processed = text.lower()
         return processed 
 
+@contextmanager
+def create_temp_zip(model_path: str, model_name: str, model_id: int):
+    """Create temporary zip file with context manager"""
+    temp_dir = tempfile.mkdtemp()
+    try:
+        zip_path = os.path.join(temp_dir, f'model_{model_id}_{model_name}.zip')
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Add model files
+            for root, _, files in os.walk(model_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, model_path)
+                    zipf.write(file_path, arcname)
+            
+            # Add readme
+            readme_content = f"""
+            Model: {model_name}
+            ID: {model_id}
+            
+            Files:
+            - model.joblib: The trained model
+            - vectorizer.joblib: The fitted vectorizer
+            
+            How to use:
+            ```python
+            import joblib
+            
+            # Load model and vectorizer
+            model = joblib.load('model.joblib')
+            vectorizer = joblib.load('vectorizer.joblib')
+            
+            # Predict
+            text = "Your text here"
+            X = vectorizer.transform([text])
+            prediction = model.predict(X)
+            probabilities = model.predict_proba(X)
+            ```
+            """
+            zipf.writestr('README.txt', readme_content)
+        
+        yield zip_path
+    finally:
+        shutil.rmtree(temp_dir)
+
 @router.get("/{model_id}/download")
 async def download_model(
     model_id: int,
     db: Session = Depends(deps.get_db)
 ):
     """Download trained model dan vectorizer"""
+    logger.info(f"Attempting to download model {model_id}")
+    
     repo = AIModelRepository(db)
     model = repo.get_by_id(model_id)
     
@@ -505,69 +563,73 @@ async def download_model(
     
     try:
         model_path = model.config.get("model_path")
-        if not model_path:
-            raise ValueError("Model path not found in config")
+        if not model_path or not os.path.exists(model_path):
+            raise HTTPException(
+                status_code=404,
+                detail="Model files tidak ditemukan"
+            )
         
-        # Buat temporary zip file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp_zip:
-            zip_path = tmp_zip.name
+        # Buat zip file di memory
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Add model files
+            for root, _, files in os.walk(model_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, model_path)
+                    zipf.write(file_path, arcname)
             
-            # Create zip file
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # Add model files
-                for root, _, files in os.walk(model_path):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, model_path)
-                        zipf.write(file_path, arcname)
-                
-                # Add readme
-                readme_content = f"""
-                Model: {model.name}
-                ID: {model.id}
-                Type: {model.model_type}
-                Created: {model.created_at}
-                
-                Files:
-                - model.joblib: The trained model
-                - vectorizer.joblib: The fitted vectorizer
-                
-                How to use:
-                ```python
-                import joblib
-                
-                # Load model and vectorizer
-                model = joblib.load('model.joblib')
-                vectorizer = joblib.load('vectorizer.joblib')
-                
-                # Predict
-                text = "Your text here"
-                X = vectorizer.transform([text])
-                prediction = model.predict(X)
-                probabilities = model.predict_proba(X)
-                ```
-                """
-                
-                zipf.writestr('README.txt', readme_content)
+            # Add readme
+            readme_content = f"""
+            Model: {model.name}
+            ID: {model_id}
+            Type: {model.model_type}
+            Created: {model.created_at}
+            
+            Files:
+            - model.joblib: The trained model
+            - vectorizer.joblib: The fitted vectorizer
+            
+            How to use:
+            ```python
+            import joblib
+            
+            # Load model and vectorizer
+            model = joblib.load('model.joblib')
+            vectorizer = joblib.load('vectorizer.joblib')
+            
+            # Predict
+            text = "Your text here"
+            X = vectorizer.transform([text])
+            prediction = model.predict(X)
+            probabilities = model.predict_proba(X)
+            ```
+            """
+            zipf.writestr('README.txt', readme_content)
         
-        return FileResponse(
-            zip_path,
+        # Reset buffer position
+        zip_buffer.seek(0)
+        
+        # Buat safe filename
+        safe_name = "".join(c for c in model.name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        filename = f'model_{model_id}_{safe_name}.zip'
+        
+        # Return streaming response
+        return StreamingResponse(
+            zip_buffer,
             media_type='application/zip',
-            filename=f'model_{model_id}_{model.name.lower().replace(" ", "_")}.zip'
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
         )
-        
+            
     except Exception as e:
+        logger.error(f"Error downloading model: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error saat mendownload model: {str(e)}"
         )
-    finally:
-        # Cleanup temporary file
-        if 'zip_path' in locals():
-            try:
-                os.unlink(zip_path)
-            except:
-                pass
 
 @router.get("/{model_id}/sample-code")
 async def get_sample_code(

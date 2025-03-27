@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 class ModelTrainer:
     def __init__(self, repo: AIModelRepository):
         self.repo = repo
-        # Buat direktori untuk menyimpan model
-        self.model_dir = "saved_models"
+        # Buat absolute path untuk model directory
+        self.model_dir = os.path.abspath(os.path.join(os.getcwd(), "saved_models"))
         os.makedirs(self.model_dir, exist_ok=True)
+        logger.info(f"Model directory: {self.model_dir}")
 
     async def start_training(self, model_id: int, dataset_path: str, config: Dict[str, Any]):
         """Mulai proses training"""
@@ -65,24 +66,22 @@ class ModelTrainer:
                 }
                 mlflow.log_metrics(metrics)
                 
-                # Save model dan vectorizer locally
+                # Buat model directory yang unique
                 model_path = os.path.join(self.model_dir, f"model_{model_id}")
                 os.makedirs(model_path, exist_ok=True)
                 
+                # Save model dan vectorizer
                 joblib.dump(model, os.path.join(model_path, "model.joblib"))
                 joblib.dump(vectorizer, os.path.join(model_path, "vectorizer.joblib"))
                 
-                # Log local model path to MLflow
-                mlflow.log_artifact(model_path)
+                # Update config dengan absolute path
+                config["model_path"] = model_path
                 
-                # Update model status dengan path local
+                # Update model status
                 self.repo.update_status(
                     model_id=model_id,
                     status="completed",
-                    config={
-                        **config,
-                        "model_path": model_path
-                    },
+                    config=config,
                     mlflow_run_id=run.info.run_id
                 )
                 
