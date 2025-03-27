@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/e8ed35dcc70f4fe390ffc1d2b3248e46/artifacts
+end_time: 1743040708632
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: e8ed35dcc70f4fe390ffc1d2b3248e46
+run_name: salty-robin-984
+run_uuid: e8ed35dcc70f4fe390ffc1d2b3248e46
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743040708509
+status: 3
+tags: []
+user_id: fahrizal

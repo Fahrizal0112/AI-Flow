@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/499c78359d834608917f982ad8f65b5d/artifacts
+end_time: 1743041694978
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 499c78359d834608917f982ad8f65b5d
+run_name: big-stork-956
+run_uuid: 499c78359d834608917f982ad8f65b5d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743041694790
+status: 3
+tags: []
+user_id: fahrizal

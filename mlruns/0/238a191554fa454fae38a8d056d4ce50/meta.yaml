@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/238a191554fa454fae38a8d056d4ce50/artifacts
+end_time: 1743041245602
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 238a191554fa454fae38a8d056d4ce50
+run_name: nosy-donkey-653
+run_uuid: 238a191554fa454fae38a8d056d4ce50
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1743041245455
+status: 3
+tags: []
+user_id: fahrizal
